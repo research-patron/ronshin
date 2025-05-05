@@ -1,0 +1,48 @@
+# macOS system files
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Node
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ホームディレクトリの設定ファイル
+../.*/
+../.*
+
+# PDFファイル
+../*.pdf
+
+# その他のディレクトリ
+../Applications/
+../Creative Cloud Files*/
+../Databases/
+../Documents/
+../Downloads/
+../Library/
+../Movies/
+../Music/
+../Pictures/
+../Public/
+../OneDrive/
+../Zotero/
+../projects/
+../Local Sites/
+../PyPaperbot_Project/
+../mysite/
