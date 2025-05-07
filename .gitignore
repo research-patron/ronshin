@@ -46,3 +46,5 @@ venv/
 ../Local Sites/
 ../PyPaperbot_Project/
 ../mysite/
+
+**/.claude/settings.local.json
