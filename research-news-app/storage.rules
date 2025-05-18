@@ -1,0 +1,58 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // 論文ファイル
+    match /papers/{userId}/{paperId}.pdf {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // 論文から抽出された図表
+    match /figures/{paperId}/{figureId}.{extension} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && isPaperOwner(paperId);
+    }
+    
+    // 新聞関連ファイル
+    match /newspapers/{newspaperId}/{fileName} {
+      allow read: if isOwnerOrShared(newspaperId);
+      allow write: if isOwner(newspaperId);
+    }
+    
+    // ユーザーカスタムロゴ
+    match /logos/{userId}/{fileName} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == userId && isPremiumUser();
+    }
+    
+    // ヘルパー関数
+    function isOwner(newspaperId) {
+      return request.auth != null && 
+             firestore.get(/databases/(default)/documents/newspapers/$(newspaperId)).data.creatorId == request.auth.uid;
+    }
+    
+    function isOwnerOrShared(newspaperId) {
+      let newspaper = firestore.get(/databases/(default)/documents/newspapers/$(newspaperId)).data;
+      return request.auth != null && (
+        newspaper.creatorId == request.auth.uid ||
+        newspaper.isPublic == true ||
+        (newspaper.shareSettings.type == 'group' && hasGroupAccess(newspaper.shareSettings.groupIds))
+      );
+    }
+    
+    function hasGroupAccess(groupIds) {
+      return request.auth != null && 
+             firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.groups.hasAny(groupIds);
+    }
+    
+    function isPaperOwner(paperId) {
+      return request.auth != null && 
+             firestore.get(/databases/(default)/documents/papers/$(paperId)).data.uploaderId == request.auth.uid;
+    }
+    
+    function isPremiumUser() {
+      return request.auth != null && 
+             firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.membershipTier == 'premium';
+    }
+  }
+}

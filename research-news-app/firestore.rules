@@ -1,0 +1,79 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ユーザーデータ
+    match /users/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null && request.auth.uid == userId;
+      allow update: if request.auth != null && request.auth.uid == userId;
+      allow delete: if false; // 削除禁止
+    }
+    
+    // 新聞データ
+    match /newspapers/{newspaperId} {
+      allow read: if isOwner() || isSharedWithUser() || resource.data.isPublic == true;
+      allow create: if isAuthenticated() && validateNewspaper();
+      allow update: if isOwner() && validateNewspaper();
+      allow delete: if isOwner();
+      
+      function isOwner() {
+        return request.auth != null && resource.data.creatorId == request.auth.uid;
+      }
+      
+      function isSharedWithUser() {
+        return request.auth != null && 
+               (resource.data.shareSettings.type == 'group' && 
+                resource.data.shareSettings.groupIds.hasAny(getUserGroups()));
+      }
+      
+      function getUserGroups() {
+        return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.groups || [];
+      }
+      
+      function validateNewspaper() {
+        return request.resource.data.creatorId == request.auth.uid;
+      }
+    }
+    
+    // 論文データ
+    match /papers/{paperId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && isPaperOwner();
+      allow delete: if isPaperOwner();
+      
+      function isPaperOwner() {
+        return request.auth.uid == resource.data.uploaderId;
+      }
+    }
+    
+    // グループデータ
+    match /groups/{groupId} {
+      allow read: if isGroupMember();
+      allow create: if isAuthenticated();
+      allow update: if isGroupAdmin();
+      allow delete: if isGroupAdmin();
+      
+      function isGroupMember() {
+        return request.auth != null && 
+              exists(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid));
+      }
+      
+      function isGroupAdmin() {
+        return request.auth != null && 
+              get(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid)).data.role == 'admin';
+      }
+    }
+    
+    // テンプレートデータ
+    match /templates/{templateId} {
+      allow read: if true; // 誰でも読み取り可能
+      allow write: if false; // 管理者のみ書き込み可能（Functionsから操作）
+    }
+    
+    // 共通関数
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+  }
+}
