@@ -1,24 +1,6 @@
 {
   "indexes": [
     {
-      "collectionGroup": "papers",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "uploaderId",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "processingStatus",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "createdAt",
-          "order": "DESCENDING"
-        }
-      ]
-    },
-    {
       "collectionGroup": "newspapers",
       "queryScope": "COLLECTION",
       "fields": [
@@ -37,7 +19,7 @@
       "queryScope": "COLLECTION",
       "fields": [
         {
-          "fieldPath": "isPublic",
+          "fieldPath": "shareSettings.type",
           "order": "ASCENDING"
         },
         {
@@ -47,12 +29,26 @@
       ]
     },
     {
-      "collectionGroup": "newspapers",
+      "collectionGroup": "papers",
       "queryScope": "COLLECTION",
       "fields": [
         {
-          "fieldPath": "shareSettings.type",
+          "fieldPath": "uploaderId",
           "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "groups",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "members",
+          "arrayConfig": "CONTAINS"
         },
         {
           "fieldPath": "createdAt",

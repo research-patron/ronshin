@@ -1,15 +1,4 @@
 {
-  "hosting": {
-    "source": ".",
-    "ignore": [
-      "firebase.json",
-      "**/.*",
-      "**/node_modules/**"
-    ],
-    "frameworksBackend": {
-      "region": "asia-northeast1"
-    }
-  },
   "firestore": {
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"
@@ -19,6 +8,7 @@
   },
   "functions": {
     "source": "functions",
-    "runtime": "nodejs18"
-  }
+    "runtime": "python311"
+  },
+  "apphosting": {}
 }

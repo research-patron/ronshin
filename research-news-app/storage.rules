@@ -1,58 +1,67 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    // 論文ファイル
-    match /papers/{userId}/{paperId}.pdf {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && request.auth.uid == userId;
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
     }
     
-    // 論文から抽出された図表
-    match /figures/{paperId}/{figureId}.{extension} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && isPaperOwner(paperId);
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
     }
     
-    // 新聞関連ファイル
-    match /newspapers/{newspaperId}/{fileName} {
-      allow read: if isOwnerOrShared(newspaperId);
-      allow write: if isOwner(newspaperId);
+    function isValidFileSize(maxSizeMB) {
+      return request.resource.size <= maxSizeMB * 1024 * 1024;
     }
     
-    // ユーザーカスタムロゴ
-    match /logos/{userId}/{fileName} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && request.auth.uid == userId && isPremiumUser();
+    function isValidPDF() {
+      return request.resource.contentType.matches('application/pdf');
     }
     
-    // ヘルパー関数
-    function isOwner(newspaperId) {
-      return request.auth != null && 
-             firestore.get(/databases/(default)/documents/newspapers/$(newspaperId)).data.creatorId == request.auth.uid;
+    function isValidImage() {
+      return request.resource.contentType.matches('image/.*');
     }
     
-    function isOwnerOrShared(newspaperId) {
-      let newspaper = firestore.get(/databases/(default)/documents/newspapers/$(newspaperId)).data;
-      return request.auth != null && (
-        newspaper.creatorId == request.auth.uid ||
-        newspaper.isPublic == true ||
-        (newspaper.shareSettings.type == 'group' && hasGroupAccess(newspaper.shareSettings.groupIds))
-      );
+    // Papers storage
+    match /papers/{userId}/{paperId} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner(userId) && isValidPDF() && isValidFileSize(20);
     }
     
-    function hasGroupAccess(groupIds) {
-      return request.auth != null && 
-             firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.groups.hasAny(groupIds);
+    // Figures storage
+    match /figures/{paperId}/{figureId} {
+      allow read: if isAuthenticated();
+      allow write: if false; // Server-side only
     }
     
-    function isPaperOwner(paperId) {
-      return request.auth != null && 
-             firestore.get(/databases/(default)/documents/papers/$(paperId)).data.uploaderId == request.auth.uid;
+    // Tables storage
+    match /tables/{paperId}/{tableId} {
+      allow read: if isAuthenticated();
+      allow write: if false; // Server-side only
     }
     
-    function isPremiumUser() {
-      return request.auth != null && 
-             firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.membershipTier == 'premium';
+    // Newspapers storage
+    match /newspapers/{newspaperId}/{file} {
+      allow read: if true; // Public access for generated newspapers
+      allow write: if false; // Server-side only
+    }
+    
+    // Logos storage
+    match /logos/{userId}/{filename} {
+      allow read: if true;
+      allow write: if isOwner(userId) && isValidImage() && isValidFileSize(5);
+    }
+    
+    // Templates storage
+    match /templates/{templateId}/{file} {
+      allow read: if true;
+      allow write: if false; // Admin only
+    }
+    
+    // System backups
+    match /system/backups/{path=**} {
+      allow read: if false;
+      allow write: if false; // Server-side only
     }
   }
 }

@@ -1,92 +1,72 @@
-# 論文ベース新聞一面生成システム
+# Research News - 論文ベース新聞生成システム
 
-学術論文をもとに新聞一面を自動生成し、専門知識を視覚的にわかりやすく提供するWebアプリケーションです。
+学術論文をAIで解析し、誰でも理解できる新聞形式に自動変換するWebアプリケーションです。
 
-## 概要
+## 機能
 
-このシステムは、アップロードされた学術論文をAIで解析し、新聞形式に変換することで、複雑な学術情報を視覚的に理解しやすくします。研究者間の情報共有や一般の方への研究成果の可視化を目的としています。
-
-## 主な機能
-
-- 論文アップロード機能（PDF形式、最大5つ）
-- 新聞一面自動生成機能（AIによる解析とレイアウト生成）
-- Web閲覧機能
-- PDF変換・ダウンロード機能
-- 印刷機能（A3サイズ対応）
-- 会員管理機能（無料会員・有料会員）
-- シェア機能
-- 複数テンプレート対応
+- 📄 **論文アップロード**: PDFファイルをアップロードして管理
+- 🤖 **AI論文解析**: Vertex AI Gemini 2.0 Flashによる自動解析
+- 📰 **新聞自動生成**: 5つの論文から新聞一面を自動生成
+- 🎨 **テンプレート選択**: 複数のデザインテンプレートから選択可能
+- 👥 **グループ共有**: 研究室やチームで新聞を共有
+- 📱 **レスポンシブ対応**: PC、タブレット、スマートフォンに対応
+- 🎌 **縦書き対応**: 日本の新聞レイアウトを忠実に再現
 
 ## 技術スタック
 
-### フロントエンド
-- Next.js 14 / TypeScript
-- Material UI
-- React Context API
-- React Hook Form
-- PDFKit / html-to-canvas
+- **Frontend**: Next.js 15, TypeScript, Tailwind CSS
+- **Backend**: Firebase (Authentication, Firestore, Storage, Functions)
+- **AI**: Google Vertex AI Gemini 2.0 Flash
+- **Payment**: Stripe
+- **PDF**: React-PDF
 
-### バックエンド
-- Firebase (Authentication, Firestore, Storage, Functions)
-- Vertex AI Gemini 2.0 Flash
+## セットアップ
 
-## ローカル開発環境のセットアップ
+### 1. 環境変数の設定
 
-### 前提条件
-- Node.js 18以上
-- npm 7以上
-- Firebase CLI
+`.env.local.example`を`.env.local`にコピーして、必要な環境変数を設定してください。
 
-### インストール手順
-
-1. リポジトリをクローン
 ```bash
-git clone <repository-url>
-cd research-news-app
+cp .env.local.example .env.local
 ```
 
-2. 依存パッケージをインストール
+### 2. 依存関係のインストール
+
 ```bash
 npm install
 ```
 
-3. 環境変数の設定
-`.env.local.example`をコピーして`.env.local`を作成し、必要な環境変数を設定します。
+### 3. Firebase プロジェクトの設定
 
-4. 開発サーバーの起動
+1. [Firebase Console](https://console.firebase.google.com/)で新しいプロジェクトを作成
+2. Authentication、Firestore、Storageを有効化
+3. Firebaseの設定情報を`.env.local`に追加
+
+### 4. 開発サーバーの起動
+
 ```bash
 npm run dev
 ```
 
+[http://localhost:3000](http://localhost:3000)でアプリケーションにアクセスできます。
+
 ## デプロイ
 
-### Firebaseへのデプロイ
+### Firebase Hostingへのデプロイ
 
 ```bash
-# Firebaseにログイン
-firebase login
-
-# Firebaseプロジェクトを設定
-firebase use <project-id>
-
-# 静的ファイルのビルド
+# ビルド
 npm run build
 
-# デプロイ実行
-firebase deploy
+# Firebaseにデプロイ
+npm run deploy
 ```
 
-## 会員プラン
+## 料金プラン
 
-| 機能 | 無料会員 | 有料会員 |
-|------|---------|----------|
-| 新聞生成 | 月3回まで | 無制限 |
-| 保存件数 | 最大10件 | 無制限 |
-| テンプレート | 3種類 | 10種類 |
-| カスタムロゴ | × | ○ |
-| 広告表示 | あり | なし |
-| PDF出力 | ○ | ○ |
+- **無料プラン**: 月3回まで新聞生成、最大10件の新聞保存
+- **プレミアムプラン**: 月額800円で無制限利用、全機能アクセス
 
 ## ライセンス
 
-このプロジェクトは非公開ソフトウェアです。
+このプロジェクトはMITライセンスの下で公開されています。

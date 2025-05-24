@@ -1,79 +1,82 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // ユーザーデータ
-    match /users/{userId} {
-      allow read: if request.auth != null && request.auth.uid == userId;
-      allow create: if request.auth != null && request.auth.uid == userId;
-      allow update: if request.auth != null && request.auth.uid == userId;
-      allow delete: if false; // 削除禁止
-    }
-    
-    // 新聞データ
-    match /newspapers/{newspaperId} {
-      allow read: if isOwner() || isSharedWithUser() || resource.data.isPublic == true;
-      allow create: if isAuthenticated() && validateNewspaper();
-      allow update: if isOwner() && validateNewspaper();
-      allow delete: if isOwner();
-      
-      function isOwner() {
-        return request.auth != null && resource.data.creatorId == request.auth.uid;
-      }
-      
-      function isSharedWithUser() {
-        return request.auth != null && 
-               (resource.data.shareSettings.type == 'group' && 
-                resource.data.shareSettings.groupIds.hasAny(getUserGroups()));
-      }
-      
-      function getUserGroups() {
-        return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.groups || [];
-      }
-      
-      function validateNewspaper() {
-        return request.resource.data.creatorId == request.auth.uid;
-      }
-    }
-    
-    // 論文データ
-    match /papers/{paperId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update: if isAuthenticated() && isPaperOwner();
-      allow delete: if isPaperOwner();
-      
-      function isPaperOwner() {
-        return request.auth.uid == resource.data.uploaderId;
-      }
-    }
-    
-    // グループデータ
-    match /groups/{groupId} {
-      allow read: if isGroupMember();
-      allow create: if isAuthenticated();
-      allow update: if isGroupAdmin();
-      allow delete: if isGroupAdmin();
-      
-      function isGroupMember() {
-        return request.auth != null && 
-              exists(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid));
-      }
-      
-      function isGroupAdmin() {
-        return request.auth != null && 
-              get(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid)).data.role == 'admin';
-      }
-    }
-    
-    // テンプレートデータ
-    match /templates/{templateId} {
-      allow read: if true; // 誰でも読み取り可能
-      allow write: if false; // 管理者のみ書き込み可能（Functionsから操作）
-    }
-    
-    // 共通関数
+    // Helper functions
     function isAuthenticated() {
       return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isValidMembership() {
+      return isAuthenticated() && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+    
+    function isPremium() {
+      return isAuthenticated() && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.membershipTier == 'premium';
+    }
+    
+    // Users collection
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId) && 
+        (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['uid', 'email']));
+      allow delete: if false;
+    }
+    
+    // Papers collection
+    match /papers/{paperId} {
+      allow read: if isAuthenticated() && 
+        (resource.data.uploaderId == request.auth.uid || 
+         resource.data.isPublic == true);
+      allow create: if isAuthenticated() && 
+        request.resource.data.uploaderId == request.auth.uid;
+      allow update: if isOwner(resource.data.uploaderId);
+      allow delete: if isOwner(resource.data.uploaderId);
+    }
+    
+    // Newspapers collection
+    match /newspapers/{newspaperId} {
+      allow read: if resource.data.isPublic == true || 
+        (isAuthenticated() && resource.data.creatorId == request.auth.uid) ||
+        (isAuthenticated() && request.auth.uid in resource.data.shareSettings.allowedUsers);
+      allow create: if isValidMembership();
+      allow update: if isOwner(resource.data.creatorId);
+      allow delete: if isOwner(resource.data.creatorId);
+    }
+    
+    // Groups collection
+    match /groups/{groupId} {
+      allow read: if isAuthenticated() && 
+        request.auth.uid in resource.data.members;
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && 
+        (resource.data.creatorId == request.auth.uid || 
+         request.auth.uid in resource.data.admins);
+      allow delete: if isOwner(resource.data.creatorId);
+    }
+    
+    // Templates collection (read-only for users)
+    match /templates/{templateId} {
+      allow read: if true;
+      allow write: if false;
+    }
+    
+    // Payments collection
+    match /payments/{paymentId} {
+      allow read: if isOwner(resource.data.userId);
+      allow write: if false; // Only server-side writes
+    }
+    
+    // System settings (read-only for all)
+    match /systemSettings/{settingId} {
+      allow read: if true;
+      allow write: if false;
     }
   }
 }

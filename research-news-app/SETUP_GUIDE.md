@@ -1,161 +1,153 @@
-# 論文ベース新聞一面生成システム セットアップガイド
+# セットアップガイド
 
-このガイドでは、論文ベース新聞一面生成システムのセットアップ手順と基本的な利用方法を説明します。
+## 前提条件
 
-## 開発環境のセットアップ
+- Node.js 18以上
+- npm または yarn
+- Firebaseアカウント
+- Google Cloudアカウント（Vertex AI用）
+- Stripeアカウント（決済処理用）
 
-### 必要条件
-- Node.js 18.x以上
-- npm 7.x以上
-- Firebase CLI
-- Google Cloud SDK（Vertex AIへのアクセス用）
+## 詳細セットアップ手順
 
-### インストール手順
+### 1. Firebaseプロジェクトの設定
 
-1. リポジトリをクローン
+#### 1.1 プロジェクトの作成
+
+1. [Firebase Console](https://console.firebase.google.com/)にアクセス
+2. 「プロジェクトを追加」をクリック
+3. プロジェクト名を入力（例：research-news-app）
+4. Google Analyticsを有効化（オプション）
+
+#### 1.2 Authenticationの設定
+
+1. 左メニューから「Authentication」を選択
+2. 「始める」をクリック
+3. Sign-in methodタブで以下を有効化：
+   - メール/パスワード
+   - Google
+
+#### 1.3 Firestoreの設定
+
+1. 左メニューから「Firestore Database」を選択
+2. 「データベースの作成」をクリック
+3. 本番モードで開始
+4. ロケーションを選択（asia-northeast1推奨）
+5. セキュリティルールをコピー（firestore.rules）
+6. インデックスをコピー（firestore.indexes.json）
+
+#### 1.4 Cloud Storageの設定
+
+1. 左メニューから「Storage」を選択
+2. 「始める」をクリック
+3. セキュリティルールをコピー（storage.rules）
+
+### 2. Google Cloud設定（Vertex AI）
+
+#### 2.1 APIの有効化
+
+1. [Google Cloud Console](https://console.cloud.google.com/)にアクセス
+2. Vertex AI APIを有効化
+3. サービスアカウントを作成
+4. 認証キーをダウンロード
+
+#### 2.2 環境変数の設定
+
 ```bash
-git clone <repository-url>
-cd research-news-app
+# .env.local
+GOOGLE_CLOUD_PROJECT_ID=your-project-id
+GOOGLE_APPLICATION_CREDENTIALS=path/to/service-account-key.json
+VERTEX_AI_LOCATION=asia-northeast1
 ```
 
-2. 依存パッケージのインストール
-```bash
-npm install
-```
+### 3. Stripe設定
 
-3. 環境変数の設定
-`.env.local.example`をコピーして`.env.local`を作成し、必要な環境変数を設定します。
+1. [Stripe Dashboard](https://dashboard.stripe.com/)にアクセス
+2. APIキーを取得
+3. 商品と価格を作成：
+   - 月額プラン: ¥800/月
+   - 年額プラン: ¥8,000/年
 
-```bash
-cp .env.local.example .env.local
-```
-
-`.env.local`ファイルを編集し、Firebase、Google Cloud、Stripeなどの認証情報を設定します。
-
-4. Firebaseプロジェクトの設定
-Firebaseプロジェクトがまだ作成されていない場合は、Firebase Consoleで新しいプロジェクトを作成し、必要なサービス（Authentication、Firestore、Storage、Functions）を有効にします。
+### 4. Firebase Functions設定
 
 ```bash
-# Firebase CLIをインストール
+# Firebase CLIのインストール
 npm install -g firebase-tools
 
-# Firebaseにログイン
+# ログイン
 firebase login
 
-# Firebaseプロジェクトの初期化
-firebase init
+# プロジェクトの初期化
+firebase init functions
+
+# Python環境のセットアップ
+cd functions
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+pip install -r requirements.txt
 ```
 
-5. Vertex AIの設定
-Google Cloud Consoleで以下の手順に従って、Vertex AI APIを有効にします：
-- Vertex AI APIを有効化
-- サービスアカウントを作成し、適切な権限を付与
-- サービスアカウントのキーを作成し、ダウンロード
-- ダウンロードしたキーファイルは安全な場所に保存し、`GOOGLE_APPLICATION_CREDENTIALS`環境変数に設定
+### 5. 初期データの投入
 
-6. 開発サーバーの起動
+Firestoreに以下のコレクションを作成：
+
+#### templates コレクション
+
+```javascript
+// 標準テンプレート
+{
+  id: "standard-1",
+  name: "スタンダード",
+  description: "基本的な新聞レイアウト",
+  previewImageUrl: "/templates/standard-1.png",
+  isPremium: false,
+  category: "standard",
+  layout: { /* レイアウト定義 */ },
+  createdAt: new Date(),
+  updatedAt: new Date()
+}
+```
+
+### 6. ローカル開発環境の起動
+
 ```bash
+# フロントエンド
 npm run dev
+
+# Firebase エミュレータ（別ターミナル）
+firebase emulators:start
 ```
-
-## 主要機能の利用方法
-
-### 会員登録とログイン
-- メールアドレスとパスワードを使用して登録
-- Googleアカウントでのログインもサポート
-
-### 論文アップロード
-1. ダッシュボードから「論文管理」を選択
-2. 「論文アップロード」ボタンをクリック
-3. PDFファイルを選択（最大5つ）
-4. 必要なメタデータを入力
-5. 「アップロード」ボタンをクリック
-
-### 新聞生成
-1. ダッシュボードから「新聞作成」を選択
-2. アップロード済みの論文を選択（最大5つ）
-3. テンプレートを選択
-4. 「生成開始」ボタンをクリック
-5. AIによる解析と生成が完了するまで待機
-6. 生成された新聞をプレビュー
-
-### 新聞編集
-- ヘッドラインの編集
-- 記事内容の調整
-- レイアウトのカスタマイズ
-- フォントやカラースキームの変更（有料会員のみ）
-- カスタムロゴの追加（有料会員のみ）
-
-### PDFエクスポートと印刷
-- 「PDF出力」ボタンをクリックして設定を選択
-- A3サイズでの印刷に最適化
-- 生成されたPDFをダウンロード
-
-### 共有機能
-- SNSでの共有
-- メール送信
-- 共有リンクの生成
-- グループ内での共有設定
-
-## デプロイ手順
-
-### Firebase Hostingへのデプロイ
-
-1. 本番用ビルドの作成
-```bash
-npm run build
-```
-
-2. Firebaseにデプロイ
-```bash
-firebase deploy
-```
-
-これにより、以下のサービスがデプロイされます：
-- Webアプリケーション (Hosting)
-- Firestore構成とセキュリティルール
-- Cloud Functions
-- Storage設定
 
 ## トラブルシューティング
 
-### 一般的な問題
+### CORS エラーが発生する場合
 
-1. **依存パッケージのエラー**
-```bash
-npm clean-install
+Cloud Storageのバケットに以下のCORS設定を追加：
+
+```json
+[
+  {
+    "origin": ["http://localhost:3000", "https://your-domain.com"],
+    "method": ["GET", "PUT", "POST", "DELETE"],
+    "maxAgeSeconds": 3600,
+    "responseHeader": ["Content-Type"]
+  }
+]
 ```
 
-2. **Firebaseとの接続エラー**
-- Firebase Consoleで設定が正しいか確認
-- 環境変数が正しく設定されているか確認
+### Vertex AI の認証エラー
 
-3. **Vertex AIとの接続エラー**
-- Google Cloud Consoleで権限が正しく設定されているか確認
-- サービスアカウントキーが正しいパスに配置されているか確認
+1. サービスアカウントキーのパスを確認
+2. Google Cloud SDKで認証：
+   ```bash
+   gcloud auth application-default login
+   ```
 
-4. **ビルドエラー**
-- Node.jsとnpmのバージョンが最新か確認
-- 互換性のない依存関係がないか確認
+### Firebase Functionsのデプロイエラー
 
-## メンテナンス
-
-### 定期的なメンテナンス
-- 依存パッケージの更新
-- セキュリティパッチの適用
-- バックアップの実行
-
-### モニタリング
-- Firebase Consoleでのエラー監視
-- Google Cloud Monitoringでのパフォーマンス監視
-- ユーザーフィードバックの収集と対応
-
-## 技術的サポート
-
-技術的な問題やカスタマイズについては、以下のリソースを参照してください：
-- GitHub Issues
-- 開発者ドキュメント
-- FAQセクション
-
----
-© Research News Team, 2024
+Python環境が正しく設定されているか確認：
+```bash
+cd functions
+python --version  # 3.11以上
+pip list  # 依存関係の確認
+```
