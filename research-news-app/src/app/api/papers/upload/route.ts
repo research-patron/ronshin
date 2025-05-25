@@ -47,11 +47,16 @@ export async function POST(request: NextRequest) {
     // Generate unique filename
     const timestamp = Date.now();
     const filename = `papers/${uid}/${timestamp}_${file.name}`;
+    console.log('Uploading file:', filename);
 
     // Upload to Storage
-    const bucket = storage.bucket();
+    const bucketName = `${process.env.GOOGLE_CLOUD_PROJECT_ID || 'ronshin-72b20'}.firebasestorage.app`;
+    console.log('Using storage bucket:', bucketName);
+    
+    const bucket = storage.bucket(bucketName);
     const fileBuffer = await file.arrayBuffer();
     const storageFile = bucket.file(filename);
+    console.log('Storage file object created');
     
     await storageFile.save(Buffer.from(fileBuffer), {
       metadata: {
@@ -62,12 +67,14 @@ export async function POST(request: NextRequest) {
         }
       }
     });
+    console.log('File saved to storage');
 
     // Get download URL
     const [url] = await storageFile.getSignedUrl({
       action: 'read',
       expires: '01-01-2500', // Far future expiry
     });
+    console.log('Signed URL generated');
 
     // Create paper document in Firestore
     const paperData = {
@@ -116,8 +123,17 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Paper upload error:', error);
+    console.error('Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      error: error
+    });
+    
     return NextResponse.json(
-      { error: 'Failed to upload paper' },
+      { 
+        error: 'Failed to upload paper',
+        details: error instanceof Error ? error.message : 'Unknown error occurred'
+      },
       { status: 500 }
     );
   }

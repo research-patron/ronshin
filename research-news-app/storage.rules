@@ -23,7 +23,7 @@ service firebase.storage {
     }
     
     // Papers storage
-    match /papers/{userId}/{paperId} {
+    match /papers/{userId}/{document=**} {
       allow read: if isAuthenticated();
       allow write: if isOwner(userId) && isValidPDF() && isValidFileSize(20);
     }

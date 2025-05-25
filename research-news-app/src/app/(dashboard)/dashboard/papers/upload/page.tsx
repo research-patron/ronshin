@@ -81,11 +81,12 @@ export default function PaperUploadPage() {
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'アップロードに失敗しました');
+        const errorData = await response.json();
+        console.error('Upload API error:', errorData);
+        throw new Error(errorData.details || errorData.error || 'アップロードに失敗しました');
       }
 
-      const result = await response.json();
+      await response.json();
 
       // Update status to success
       setFiles(prev => prev.map(f => 

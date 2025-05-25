@@ -6,6 +6,8 @@ runConfig:
   concurrency: 80
   cpu: 1
   memoryMiB: 512
+  # Use default service account for Cloud Run which has necessary permissions
+  # for Firebase services in App Hosting environment
 
 # Environment variables and secrets.
 env:
