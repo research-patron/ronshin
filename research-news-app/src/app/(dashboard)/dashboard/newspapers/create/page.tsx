@@ -267,15 +267,16 @@ export default function CreateNewspaperPage() {
   const handleCreate = async () => {
     setCreating(true);
     try {
-      const response = await fetch('/api/newspapers/create', {
+      const response = await fetch('https://us-central1-ronshin-72b20.cloudfunctions.net/create_newspaper_api', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${await currentUser!.getIdToken()}`,
         },
         body: JSON.stringify({
-          paperIds: analyzedPaperIds,
+          selectedPapers: analyzedPaperIds,
           templateId: selectedTemplate,
+          newspaperName: `研究新聞 ${new Date().toLocaleDateString('ja-JP')}`,
           language: selectedLanguage,
         }),
       });

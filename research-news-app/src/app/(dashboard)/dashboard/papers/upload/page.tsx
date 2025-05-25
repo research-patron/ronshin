@@ -71,8 +71,8 @@ export default function PaperUploadPage() {
       const formData = new FormData();
       formData.append('file', uploadedFile.file);
 
-      // Upload via API route
-      const response = await fetch('/api/papers/upload', {
+      // Upload via Cloud Function
+      const response = await fetch('https://us-central1-ronshin-72b20.cloudfunctions.net/upload_paper_api', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
