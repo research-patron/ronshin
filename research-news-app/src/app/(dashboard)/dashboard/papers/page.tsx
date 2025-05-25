@@ -164,9 +164,9 @@ export default function PapersPage() {
                     {papers.map((paper) => (
                       <tr key={paper.id}>
                         <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
-                          <Link href={`/dashboard/papers/${paper.id}`} className="hover:text-blue-600">
+                          <span className="font-medium text-gray-900">
                             {paper.title}
-                          </Link>
+                          </span>
                         </td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                           {paper.authors.length > 0 ? paper.authors.join(', ') : '-'}
