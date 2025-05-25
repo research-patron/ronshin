@@ -19,6 +19,13 @@ db = firestore.client()
 from src.ai.paper_analysis import analyze_paper
 from src.utils.newspaper_generator import generate_newspaper_content
 
+# Import API functions (if they're in the same directory)
+try:
+    from api_upload_paper import upload_paper_api
+    from api_create_newspaper import create_newspaper_api
+except ImportError:
+    pass  # These functions might be deployed separately
+
 # CORS headers
 CORS_HEADERS = {
     'Access-Control-Allow-Origin': '*',
