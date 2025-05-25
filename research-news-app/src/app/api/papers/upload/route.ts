@@ -2,11 +2,20 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAdminAuth, getAdminFirestore, getAdminStorage } from '@/lib/firebase-admin';
 
 export async function POST(request: NextRequest) {
+  console.log('Paper upload endpoint called');
+  console.log('Environment:', {
+    GOOGLE_CLOUD_PROJECT_ID: process.env.GOOGLE_CLOUD_PROJECT_ID,
+    NEXT_PUBLIC_FIREBASE_PROJECT_ID: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+    NODE_ENV: process.env.NODE_ENV,
+  });
+
   try {
     // Get admin services
-    const auth = await getAdminAuth();
-    const db = await getAdminFirestore();
-    const storage = await getAdminStorage();
+    console.log('Initializing Firebase Admin services...');
+    const auth = getAdminAuth();
+    const db = getAdminFirestore();
+    const storage = getAdminStorage();
+    console.log('Firebase Admin services initialized successfully');
 
     // Verify authentication
     const authHeader = request.headers.get('Authorization');
@@ -73,6 +82,31 @@ export async function POST(request: NextRequest) {
     };
 
     const paperRef = await db.collection('papers').add(paperData);
+
+    // Trigger AI analysis via Cloud Function
+    try {
+      const functionUrl = 'https://us-central1-ronshin-72b20.cloudfunctions.net/analyze_paper_http';
+      const analysisResponse = await fetch(functionUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          paper_id: paperRef.id,
+          file_url: url,
+          uploader_id: uid,
+          language: 'ja'
+        })
+      });
+
+      if (!analysisResponse.ok) {
+        console.error('Failed to trigger AI analysis:', await analysisResponse.text());
+      }
+    } catch (error) {
+      console.error('Error triggering AI analysis:', error);
+      // Don't fail the upload if analysis trigger fails
+    }
 
     return NextResponse.json({
       success: true,

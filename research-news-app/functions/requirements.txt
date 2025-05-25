@@ -1,7 +1,9 @@
-firebase-functions>=0.4.0
+firebase-functions==0.4.3
 firebase-admin>=6.1.0
 google-cloud-secret-manager>=2.16.3
 google-cloud-aiplatform>=1.38.1
+google-cloud-logging>=3.9.0
+vertexai>=1.38.1
 PyPDF2>=3.0.1
 python-magic>=0.4.27
 Pillow>=10.0.1

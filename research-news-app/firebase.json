@@ -10,5 +10,15 @@
     "source": "functions",
     "runtime": "python311"
   },
-  "apphosting": {}
+  "hosting": {
+    "source": ".",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "frameworksBackend": {
+      "region": "asia-northeast1"
+    }
+  }
 }

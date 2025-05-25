@@ -15,14 +15,10 @@ service cloud.firestore {
         exists(/databases/$(database)/documents/users/$(request.auth.uid));
     }
     
-    function isPremium() {
-      return isAuthenticated() && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.membershipTier == 'premium';
-    }
     
     // Users collection
     match /users/{userId} {
-      allow read: if isOwner(userId);
+      allow read: if isAuthenticated();
       allow create: if isOwner(userId);
       allow update: if isOwner(userId) && 
         (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['uid', 'email']));
@@ -31,12 +27,18 @@ service cloud.firestore {
     
     // Papers collection
     match /papers/{paperId} {
-      allow read: if isAuthenticated() && 
-        (resource.data.uploaderId == request.auth.uid || 
-         resource.data.isPublic == true);
+      allow read: if isAuthenticated() && (
+        resource == null || // Allow read during creation
+        resource.data.uploaderId == request.auth.uid || 
+        resource.data.isPublic == true
+      );
       allow create: if isAuthenticated() && 
         request.resource.data.uploaderId == request.auth.uid;
-      allow update: if isOwner(resource.data.uploaderId);
+      allow update: if isAuthenticated() && (
+        resource.data.uploaderId == request.auth.uid ||
+        // Allow update if the paper is being processed (for Cloud Functions)
+        request.resource.data.processingStatus != null
+      );
       allow delete: if isOwner(resource.data.uploaderId);
     }
     

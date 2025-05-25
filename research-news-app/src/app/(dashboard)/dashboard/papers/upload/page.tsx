@@ -3,9 +3,6 @@
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { storage, db } from '@/lib/firebase';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { Button } from '@/components/ui/Button';
 import { 
   Upload, 
@@ -64,32 +61,31 @@ export default function PaperUploadPage() {
           : f
       ));
 
-      // Create storage reference
-      const storageRef = ref(storage, `papers/${currentUser!.uid}/${uploadedFile.id}.pdf`);
-      
-      // Upload file
-      const snapshot = await uploadBytes(storageRef, uploadedFile.file);
-      const downloadURL = await getDownloadURL(snapshot.ref);
+      // Get auth token
+      const token = await currentUser?.getIdToken();
+      if (!token) {
+        throw new Error('認証トークンが取得できませんでした');
+      }
 
-      // Create paper document in Firestore
-      const paperRef = await addDoc(collection(db, 'papers'), {
-        uploaderId: currentUser!.uid,
-        title: uploadedFile.file.name.replace('.pdf', ''),
-        authors: [],
-        fileUrl: downloadURL,
-        fileSize: uploadedFile.file.size,
-        processingStatus: 'pending',
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
+      // Create FormData
+      const formData = new FormData();
+      formData.append('file', uploadedFile.file);
+
+      // Upload via API route
+      const response = await fetch('/api/papers/upload', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
       });
 
-      // Trigger AI analysis
-      try {
-        const { analyzePaperFunction } = await import('@/lib/firebase');
-        await analyzePaperFunction({ paperId: paperRef.id });
-      } catch (error) {
-        console.error('Failed to trigger AI analysis:', error);
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'アップロードに失敗しました');
       }
+
+      const result = await response.json();
 
       // Update status to success
       setFiles(prev => prev.map(f => 
@@ -102,7 +98,7 @@ export default function PaperUploadPage() {
       // Update status to error
       setFiles(prev => prev.map(f => 
         f.id === uploadedFile.id 
-          ? { ...f, status: 'error' as const, error: 'アップロードに失敗しました' } 
+          ? { ...f, status: 'error' as const, error: error instanceof Error ? error.message : 'アップロードに失敗しました' } 
           : f
       ));
     }

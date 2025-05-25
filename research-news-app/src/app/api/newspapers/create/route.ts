@@ -5,8 +5,8 @@ import { Paper } from '@/types';
 export async function POST(request: NextRequest) {
   try {
     // Get admin services
-    const auth = await getAdminAuth();
-    const db = await getAdminFirestore();
+    const auth = getAdminAuth();
+    const db = getAdminFirestore();
 
     // Verify authentication
     const authHeader = request.headers.get('Authorization');
@@ -20,11 +20,11 @@ export async function POST(request: NextRequest) {
 
     // Get request data
     const data = await request.json();
-    const { paperIds, templateId } = data;
+    const { paperIds, templateId, language = 'ja' } = data;
 
-    if (!paperIds || !Array.isArray(paperIds) || paperIds.length !== 5) {
+    if (!paperIds || !Array.isArray(paperIds) || paperIds.length < 3 || paperIds.length > 5) {
       return NextResponse.json(
-        { error: 'Exactly 5 papers are required' },
+        { error: '3 to 5 papers are required' },
         { status: 400 }
       );
     }
@@ -88,8 +88,12 @@ export async function POST(request: NextRequest) {
     // Create newspaper document
     const newspaperData = {
       creatorId: uid,
-      title: `新聞 - ${new Date().toLocaleDateString('ja-JP')}`,
+      title: language === 'en' 
+        ? `Newspaper - ${new Date().toLocaleDateString('en-US')}`
+        : `新聞 - ${new Date().toLocaleDateString('ja-JP')}`,
       templateId,
+      selectedPapers: paperIds,
+      language,
       isPublic: false,
       shareSettings: {
         type: 'private',

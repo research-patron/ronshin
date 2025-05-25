@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -25,7 +24,6 @@ const registerSchema = z.object({
 type RegisterFormData = z.infer<typeof registerSchema>;
 
 export default function RegisterPage() {
-  const router = useRouter();
   const { signup, loginWithGoogle } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -43,7 +41,6 @@ export default function RegisterPage() {
       setError('');
       setLoading(true);
       await signup(data.email, data.password, data.displayName);
-      router.push('/dashboard');
     } catch (err: unknown) {
       if (err && typeof err === 'object' && 'code' in err) {
         const errorCode = (err as { code: string }).code;
@@ -69,7 +66,6 @@ export default function RegisterPage() {
       setError('');
       setLoading(true);
       await loginWithGoogle();
-      router.push('/dashboard');
     } catch (error: unknown) {
       console.error('Google signup error:', error);
       setError('Googleアカウントでの登録に失敗しました');

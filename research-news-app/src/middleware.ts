@@ -6,32 +6,31 @@ export function middleware(request: NextRequest) {
   // Get the pathname of the request (e.g. /, /dashboard)
   const path = request.nextUrl.pathname;
 
-  // Define paths that require authentication
-  const isProtectedPath = path.startsWith('/dashboard');
-
-  // Define paths that are only for non-authenticated users
-  const isAuthPath = path.startsWith('/login') || path.startsWith('/register');
-
-  // Check if user has auth token (you'll need to implement proper auth check)
-  const token = request.cookies.get('auth-token');
-
-  // Redirect logic
-  if (isProtectedPath && !token) {
-    return NextResponse.redirect(new URL('/login', request.url));
+  // Skip middleware for static files and API routes
+  if (
+    path.startsWith('/_next') ||
+    path.startsWith('/api') ||
+    path.startsWith('/static') ||
+    path.includes('.') // static files
+  ) {
+    return NextResponse.next();
   }
 
-  if (isAuthPath && token) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
-  }
-
+  // For now, let client-side handle authentication
+  // Firebase App Hosting doesn't support server-side authentication checks
   return NextResponse.next();
 }
 
 // See "Matching Paths" below to learn more
 export const config = {
   matcher: [
-    '/dashboard/:path*',
-    '/login',
-    '/register',
+    /*
+     * Match all request paths except for the ones starting with:
+     * - api (API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     */
+    '/((?!api|_next/static|_next/image|favicon.ico).*)',
   ],
 };

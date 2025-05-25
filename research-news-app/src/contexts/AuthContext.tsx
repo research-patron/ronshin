@@ -40,10 +40,20 @@ export const useAuth = () => {
   return context;
 };
 
+interface AuthState {
+  currentUser: FirebaseUser | null;
+  userData: User | null;
+  authChecked: boolean;
+  userDataLoading: boolean;
+}
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
-  const [userData, setUserData] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [state, setState] = useState<AuthState>({
+    currentUser: null,
+    userData: null,
+    authChecked: false,
+    userDataLoading: false
+  });
 
   // Create user document in Firestore
   const createUserDocument = async (user: FirebaseUser): Promise<User> => {
@@ -88,20 +98,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Fetch user data from Firestore
-  const fetchUserData = async (uid: string) => {
-    try {
-      const userRef = doc(db, 'users', uid);
-      const userSnap = await getDoc(userRef);
-      
-      if (userSnap.exists()) {
-        setUserData(userSnap.data() as User);
-      }
-    } catch (error) {
-      console.error('Error fetching user data:', error);
-    }
-  };
-
   // Signup with email and password
   const signup = async (email: string, password: string, displayName: string) => {
     try {
@@ -111,8 +107,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await updateProfile(user, { displayName });
       
       // Create user document
-      const userData = await createUserDocument(user);
-      setUserData(userData);
+      await createUserDocument(user);
+      
+      // User data will be updated by onAuthStateChanged
       
       // Send email verification
       try {
@@ -156,7 +153,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Logout
   const logout = async () => {
     await signOut(auth);
-    setUserData(null);
+    setState(prev => ({ ...prev, userData: null }));
   };
 
   // Reset password
@@ -166,12 +163,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Update user profile
   const updateUserProfile = async (displayName: string) => {
-    if (!currentUser) throw new Error('No user logged in');
+    if (!state.currentUser) throw new Error('No user logged in');
     
-    await updateProfile(currentUser, { displayName });
+    await updateProfile(state.currentUser, { displayName });
     
     // Update in Firestore
-    const userRef = doc(db, 'users', currentUser.uid);
+    const userRef = doc(db, 'users', state.currentUser.uid);
     await setDoc(userRef, {
       displayName,
       updatedAt: serverTimestamp()
@@ -180,31 +177,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Send verification email
   const sendVerificationEmail = async () => {
-    if (!currentUser) throw new Error('No user logged in');
-    await sendEmailVerification(currentUser);
+    if (!state.currentUser) throw new Error('No user logged in');
+    await sendEmailVerification(state.currentUser);
   };
 
   // Listen to auth state changes
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setCurrentUser(user);
+      setState(prev => ({ ...prev, currentUser: user, authChecked: true }));
       
       if (user) {
-        await fetchUserData(user.uid);
+        setState(prev => ({ ...prev, userDataLoading: true }));
+        try {
+          const userRef = doc(db, 'users', user.uid);
+          const userSnap = await getDoc(userRef);
+          
+          if (userSnap.exists()) {
+            setState(prev => ({
+              ...prev,
+              userData: userSnap.data() as User,
+              userDataLoading: false
+            }));
+          }
+        } catch (error) {
+          console.error('Error fetching user data:', error);
+          setState(prev => ({ ...prev, userDataLoading: false }));
+        }
       } else {
-        setUserData(null);
+        setState(prev => ({ ...prev, userData: null, userDataLoading: false }));
       }
-      
-      setLoading(false);
     });
 
     return unsubscribe;
   }, []);
 
   const value = {
-    currentUser,
-    userData,
-    loading,
+    currentUser: state.currentUser,
+    userData: state.userData,
+    loading: !state.authChecked || state.userDataLoading,
     signup,
     login,
     loginWithGoogle,
@@ -216,7 +226,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {state.authChecked && children}
     </AuthContext.Provider>
   );
 };
