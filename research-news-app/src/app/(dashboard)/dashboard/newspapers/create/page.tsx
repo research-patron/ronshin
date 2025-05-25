@@ -299,7 +299,7 @@ export default function CreateNewspaperPage() {
         // Continue anyway - the generation can be retried later
       }
       
-      router.push('/dashboard/newspapers');
+      router.push(`/dashboard/newspapers/view?id=${newspaperId}`);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : '新聞の作成に失敗しました';
       alert(errorMessage);

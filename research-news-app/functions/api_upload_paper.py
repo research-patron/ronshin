@@ -81,13 +81,9 @@ def upload_paper_api(req: https_fn.Request) -> https_fn.Response:
             content_type='application/pdf'
         )
         
-        # Generate signed URL
-        from datetime import timedelta
-        url = blob.generate_signed_url(
-            version="v4",
-            expiration=timedelta(days=3650),
-            method="GET"
-        )
+        # Make blob publicly readable or use Firebase Storage URL
+        # Since papers should be accessible to authenticated users, we'll use the public URL format
+        url = f"https://firebasestorage.googleapis.com/v0/b/{bucket.name}/o/{blob.name.replace('/', '%2F')}?alt=media"
         
         # Save to Firestore
         paper_data = {

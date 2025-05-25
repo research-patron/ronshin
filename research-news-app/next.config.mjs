@@ -8,7 +8,11 @@ const nextConfig = {
     domains: ['firebasestorage.googleapis.com', 'storage.googleapis.com'],
     unoptimized: true,
   },
-  trailingSlash: true,
+  trailingSlash: false,
+  skipTrailingSlashRedirect: true,
+  generateBuildId: async () => {
+    return 'build-' + Date.now();
+  },
   env: {
     NEXT_PUBLIC_FIREBASE_API_KEY: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
     NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,

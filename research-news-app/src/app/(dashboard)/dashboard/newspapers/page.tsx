@@ -166,7 +166,8 @@ export default function NewspapersPage() {
               key={newspaper.id}
               className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow duration-200"
             >
-                <div className="p-6 cursor-pointer" onClick={() => alert('新聞詳細ページは実装中です')}>
+              <Link href={`/dashboard/newspapers/view?id=${newspaper.id}`}>
+                <div className="p-6">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <h3 className="text-lg font-semibold text-gray-900 truncate">
@@ -225,6 +226,7 @@ export default function NewspapersPage() {
                     </div>
                   </div>
                 </div>
+              </Link>
             </div>
           ))}
         </div>
